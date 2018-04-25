@@ -76,7 +76,9 @@ Linux .... 4.4.0-119-generic #143~14.04.1-Ubuntu ... UTC 2018 x86_64 x86_64 x86_
 
 ```
 <hr>
+
 ## WATCH OUTS
+
 Exgit :
 
 * modifies ```/etc/fstab```
