@@ -1,0 +1,457 @@
+#!/bin/bash
+
+# $HOME/bin/exgit.sh
+
+declare -a DEVICESARRAY
+ACTION=$1
+REPONAME=$2
+THIS_USER=$USER
+CWD=$PWD
+SOURCE_FILE="/opt/exgit/exgit.txt"
+
+source $SOURCE_FILE
+
+LOG_FILE="$HOMEPATH/.config/exgit/exgit.log"
+# exec 3>&1 1>>${LOG_FILE} 2>&1
+
+function createMenu(){
+	IFS=$'\n'
+	echo "SELECT USB USING THE NUMBERS PROVIDED ON THE LEFT:"
+	count=0
+
+	for device in `ls -l /dev/disk/by-uuid/ | grep -E 'sdb|sdc'`
+	do
+		mountPath=`echo $device | tr -s ' '|cut -f11 -d ' '|cut -f3 -d '/'`	
+		#Query using udevadmin for :
+		#	udev data--> [ATTRS{idVendor} & ATTRS{idProduct}]
+		#	display data--> [Label(ID_VENDOR)]
+		#	fstab data--> [mount path dev/sd+]
+		deviceDetails=`udevadm info --query=all --name "/dev/$mountPath"`
+		# display
+		label=`echo "$deviceDetails" | grep  ID_FS_LABEL=| cut -f2 -d '=' `
+		vendor=`echo "$deviceDetails" | grep  ID_VENDOR=| cut -f2 -d '=' `
+		DEVICESARRAY[count]=$mountPath
+		
+		# echo $label $vendor $idVendor $idProduct
+		echo "$count ------> $label($vendor)"
+		let "count+=1"
+
+	done
+	if [[ $count -eq 0 ]]; then
+		echo -e "\t\t No usb device detected.Insert flash and restart the script.\nExiting....!!!"
+		exit 1
+	fi
+	
+}
+
+
+function add_udev_rule(){
+
+	# change dir to  udev rules.d
+	echo -e "\t----$PWD----"
+	RULE="ACTION==\"add\", SUBSYSTEMS==\"usb\", ATTRS{idVendor}==\""$idVendor"\", ATTRS{idProduct}==\""$idProduct"\", RUN+=\""$HOME"/bin/exgit sync \$env{ID_FS_UUID}\""
+
+	#Check for existence of entry else create a new file to hold our rules
+	if [[ ! -f /etc/udev/rules.d/10-exgit.rules ]]; then
+		echo "Adding exgit udev rule......"
+		echo "Adding exgit udev rule......" >> $LOG_FILE 
+		echo "$RULE" | tee -a "/etc/udev/rules.d/10-exgit.rules" >> /dev/null 2>&1
+		
+	else
+		if sudo grep -Fq "$RULE" /etc/udev/rules.d/10-exgit.rules
+			then
+			echo
+		else
+			echo "Adding exgit udev rule......"
+			echo "Adding exgit udev rule......" >> $LOG_FILE 
+			echo "$RULE" | tee -a "/etc/udev/rules.d/10-exgit.rules" >> /dev/null 2>&1
+			
+		fi	
+
+	fi
+	
+}
+
+function add_fstab_entry(){
+	# MYUID,MYGID,UUID
+
+	uid=`id -u`
+	gid=`id -g`
+
+	check_mountall_version
+
+
+	if (( $(echo "$version < 2.5" | bc -l) )) ; then
+		echo "Mountall version < 2.5"
+		echo "Mountall version < 2.5"  >> $LOG_FILE 
+		# Prepare mount directory
+		if [[ ! -d /media/$uuid/ ]]; then
+			`sudo mkdir /media/$uuid`
+			`sudo chown $MYUID:$MYGID /media/$uuid`
+			`sudo chmod -R 777 /media/$uuid`
+		fi
+
+		repodir=$uuid
+
+		# ENTRY="UUID=$uuid    /media/$uuid/    $file_sys_type uid=$uid,gid=$gid,nofail,x-systemd.device-timeout=1,noauto,exec,umask=000 0 0"
+		ENTRY="UUID=$uuid    /media/$uuid/    $file_sys_type uid=$uid,gid=$gid,users,nofail,noauto,exec,umask=000 0 0"
+	else
+		# Prepare mount directory
+		echo "Mountall version >= 2.5"
+		echo "Mountall version >=2.5"  >> $LOG_FILE 
+		if [[ ! -d /media/exgit/ ]]; then
+			`sudo mkdir /media/exgit`
+			`sudo chown $MYUID:$MYGID /media/exgit`
+			`sudo chmod -R 777 /media/exgit`
+		fi
+		repodir="exgit"
+
+		ENTRY="UUID=$uuid    /media/exgit/    $file_sys_type uid=$uid,gid=$gid,users,nofail,noauto,exec,umask=000 0 0"
+
+	fi
+
+	# Check for existence of entry else create a new entry
+	if sudo grep -Fq "$ENTRY" /etc/fstab
+		then
+		echo "Fstab entry exists.Ignoring"
+		echo "Fstab entry exists.Ignoring" >> $LOG_FILE 
+	else
+		echo "Adding fstab entry......"
+		echo "Adding fstab entry......" >> $LOG_FILE 
+		echo "$ENTRY" | tee -a "/etc/fstab" >> /dev/null 2>&1
+		
+	fi
+
+}
+
+
+function check_mountall_version(){
+	v=$(mountall --version)
+	# `echo $v |cut -f2 -d ' '`
+	version=$(echo $v |grep -o  "[0-9.]*" | head -1)
+}
+
+function mount_flashdrive(){
+	# Ignore error raised
+	echo "Mounting drive"
+	echo "Mounting drive" >> $LOG_FILE 
+	# logger `udisksctl mount -b /dev/$selected` #>> /dev/null 2>&1`
+	`udisksctl mount -b /dev/$selected`
+	echo "Drive mounted"
+	echo "Drive mounted" >> $LOG_FILE 
+}
+
+function init_bare_repo(){
+	echo "Initializing repo at $repodir"
+	echo "Initializing repo at $repodir" >> $LOG_FILE 
+	`cd /media/$repodir`
+	if [[ ! -d /media/$repodir/EXGIT/ ]]; then
+		`sudo mkdir /media/$repodir/EXGIT`
+		`sudo chown $MYUID:$MYGID /media/$repodir/EXGIT`
+	fi
+	
+	`git init --bare /media/$repodir/EXGIT/$repo_name`
+	`sudo chown $MYUID:$MYGID /media/$repodir/EXGIT/$repo_name`
+}
+
+function get_repo_name(){
+	# init bare repo on flash-drive
+	echo "Enter name of repository.Repository will be initiated on both the flashdrive and the current DIR!: "
+	read repo_name
+
+	# validate repo name--regex
+	if [ -z "$repo_name" ]
+	then
+		get_repo_name 
+	else
+		echo "Reponame==$repo_name"
+		echo "Reponame==$repo_name" >> $LOG_FILE 
+	    rn=$repo_name
+	fi
+}
+
+function clone_repo(){
+	`cd $current_path`
+	`git clone /media/$repodir/EXGIT/$rn`
+	`sudo chown $MYUID:$MYGID /media/$repodir/EXGIT/$rn`
+}
+
+function set_remote(){
+	# `cd $PWD`
+	`git remote set-url origin file://media/$repodir/EXGIT/$rn`
+
+}
+
+function init_configs(){
+	current_path=$PWD
+	MYUID=`id -u`
+	MYGID=`id -g`
+}
+
+function init_flash(){
+	init_configs
+	createMenu
+	read choice
+	if [[ $choice -le $count ]]; then
+		#statements
+		selected=${DEVICESARRAY[$choice]}
+		deviceDetails=`udevadm info --query=all --name "/dev/$selected"`
+		# display
+		label=`echo "$deviceDetails" | grep  ID_FS_LABEL=| cut -f2 -d '=' `
+		vendor=`echo "$deviceDetails" | grep  ID_VENDOR=| cut -f2 -d '=' `
+		DEVICESARRAY[count]=$mountPath
+		
+		# udev
+		idVendor=`echo "$deviceDetails" | grep  ID_VENDOR_ID=| cut -f2 -d '=' `
+		idProduct=`echo "$deviceDetails" | grep  ID_MODEL_ID=| cut -f2 -d '=' `
+
+		# fstab
+		uuid=`echo "$deviceDetails" | grep  ID_FS_UUID=| cut -f2 -d '=' `
+		file_sys_type=`echo "$deviceDetails" | grep  ID_FS_TYPE=| cut -f2 -d '=' `
+		
+		add_udev_rule $idVendor $idProduct
+		# Had issues creating symbolic links with udev hence resorted to fstab for predetermined mount dir
+		add_fstab_entry $uuid $file_sys	_type
+		mount_flashdrive $selected
+	else
+		echo -e "\t\tInvalid choice!!!"
+		main
+	fi
+
+}
+
+
+function init_new_repo(){
+		init_flash
+
+		# Init repo
+		get_repo_name
+		init_bare_repo $rn
+		echo "Repo initialized...."
+		echo "Repo initialized...." >> $LOG_FILE 
+		clone_repo $rn
+		echo "Cloning repo from drive to $current_path"
+		echo "Cloning repo from drive to $current_path" >> $LOG_FILE 
+		set_remote $rn
+		echo "Setting repo remote"
+		echo "Setting repo remote" >> $LOG_FILE 
+		remote="origin"
+		slash="/"
+		pathtorepo=$current_path$slash$rn
+
+		store_repo_details $rn $remote $pathtorepo
+		echo "Stored repo details."
+		echo "Stored repo details." >> $LOG_FILE 
+
+}
+
+
+function local_to_flash(){
+	init_flash
+
+	# Breakdown the $PWD to get repo name
+	repo_name=$(basename $current_path)
+
+	# Change dir to flashdrive
+	cd /media/$repodir/EXGIT
+
+	# Clone as bare existing repo
+	echo "Cloning repo from drive to $current_path"
+	echo "Cloning repo from drive to $current_path" >> $LOG_FILE 
+	`git clone --bare $current_path $repo_name`
+
+	# Change ownership to user 
+	`sudo chown $MYUID:$MYGID /media/$repodir/EXGIT/$repo_name`
+
+	cd $current_path
+
+	# Set remote
+	echo "Setting repo remote"
+	echo "Setting repo remote" >> $LOG_FILE 
+	`git remote add usb /media/$repodir/EXGIT/$repo_name/`
+
+	remote="usb"
+	slash="/"
+	pathtorepo=$current_path$slash$rn
+
+	store_repo_details $rn $remote $pathtorepo
+	echo "Stored repo details."
+	echo "Stored repo details." >> $LOG_FILE 
+
+	`notify-send  -u NORMAL EXGIT "$repo_name initiated successfully"`
+
+}
+
+
+function store_repo_details(){
+	# check if dir and file exists
+	echo "Storing repo data"
+	echo "Storing repo data" >> $LOG_FILE 
+	delimmiter=","
+	# str concat
+	ROW=$repo_name$delimmiter$remote$delimmiter$pathtorepo$delimmiter$repodir
+
+	if [[ ! -d $HOME/.config/exgit/ ]]; then
+		#create folder and file
+		`sudo mkdir $HOME/.config/exgit`
+		`sudo touch $HOME/.config/exgit/exgit.txt`
+	fi
+
+	if [[ ! -f $HOME/.config/exgit/exgit.txt ]]; then
+			#create file
+			echo "No .txt file found"
+			`sudo touch $HOME/.config/exgit/exgit.txt`
+			# echo "$ROW" | tee -a "/opt/exgit/exgit.txt" >> /dev/null 2>&1
+	fi
+
+	if grep -Fq "$repo_name" $HOME/.config/exgit/exgit.txt
+		then
+			echo "Repo details entry exists"
+			echo "Repo details entry exists" >> $LOG_FILE 	
+	else
+		echo "$ROW" | tee -a "$HOME/.config/exgit/exgit.txt" >> $LOG_FILE
+		
+	fi
+	
+}
+
+# Get homeDIR for background tasks
+
+function sync_repos(){
+	echo "<--Syncronizing exgit repos----$HOMEPATH -->" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	for DIR in $(find /media/$mountuuid/EXGIT -maxdepth 1);
+		do 
+			if $(test -d ${DIR}); then 
+				repo_name=$(basename ${DIR})
+
+				# check if we have this repo localy
+				if grep -Fq "$repo_name" $HOMEPATH/.config/exgit/exgit.txt
+					then
+						# echo "Entry exists"
+						echo "Exgit: $repo_name found."
+						echo "Exgit: $repo_name found." | tee "$HOMEPATH/.config/exgit/exgit.log"
+						entry=$( echo `grep "$repo_name" "$HOMEPATH/.config/exgit/exgit.txt"`)
+						
+						remote=`echo "$entry" | cut -f2 -d ',' `
+						path=`echo "$entry" | cut -f3 -d ',' `
+
+						# 
+						if $(test -d ${path}); then
+							echo "Pushing....$path. "
+							echo "Pushing....$path. " | tee "$HOMEPATH/.config/exgit/exgit.log"
+							cd $path
+							git push $remote master
+
+							`notify-send  -u NORMAL EXGIT "$repo_name pushed successfully"`
+						fi
+				else
+					echo "grep failed $repo_name-->"
+
+				fi
+
+			fi; 
+	done
+	#
+
+}
+
+function peform_checks(){
+	if [[ ! -d /media/$mountuuid/EXGIT ]]; then
+			echo "EXGIT folder missing on drive OR drive not mounted/inserted"
+			`notify-send  -u NORMAL EXGIT "EXGIT folder missing on drive OR drive not mounted/inserted"`
+			exit 0
+	else
+		notify-send  -u NORMAL EXGIT "All checks passed"
+		echo "Houskeeping passed"
+
+	fi
+
+	# if [ ! -f "$path" ]; then
+	# # if [[ ! -f "$path" ]]; then
+	# 		#notify unable
+	# 		echo "Error: $path/.config/exgit/exgit.txt unavailable"
+	# 		# echo "Error: $path unavailable" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	# 		`notify-send  -u NORMAL EXGIT "Error: $HOME/.config/exgit/exgit.txt unavailable"`
+	# 		exit 0
+	# else
+	# 	if [[ ! -d /media/$mountuuid/EXGIT ]]; then
+	# 			echo "UUID=$mountuuid" >> $LOG_FILE 
+	# 			echo "EXGIT folder missing on drive OR drive not mounted/inserted"
+	# 			echo "EXGIT folder missing on drive OR drive not mounted/inserted" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	# 			`notify-send  -u NORMAL EXGIT "EXGIT folder missing on drive OR drive not mounted/inserted"`
+	# 			exit 0
+	# 	else
+	# 		notify-send  -u NORMAL EXGIT "All checks passed"
+	# 		echo "Houskeeping passed"
+	# 		echo "Houskeeping passed" | tee -a "$HOME/.config/exgit/exgit.log"
+
+	# 	fi	
+	# fi
+
+}
+
+
+mount_her(){
+	echo "Mounting $mountpath " | tee "$HOMEPATH/.config/exgit/exgit.log"
+	`udisksctl mount -b /dev/$mountpath -o users`
+	echo "$mountpath mounted" | tee "$HOMEPATH/.config/exgit/exgit.log"
+}
+
+get_mount_uuid(){
+	echo "Mount path==$mountpath" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	mountuuid=$(ls -l /dev/disk/by-uuid/ | grep -E $mountpath |  tr -s ' '|cut -f9 -d ' ')
+	echo "Mount uuid==$mountuuid" | tee "$HOMEPATH/.config/exgit/exgit.log"
+}
+
+auto_push(){
+
+	
+	# Start a child daemon process and exit this one since udev is not for long running tasks
+	echo "<----------Started PUSH operation------ $mountpath--->"| tee "$HOMEPATH/.config/exgit/exgit.log"
+	
+	mount_her $mountpath
+	get_mount_uuid
+	peform_checks $mountuuid
+	sync_repos
+	echo "<----------Ending PUSH operation------------>" | tee "$HOMEPATH/.config/exgit/exgit.log"
+}
+
+
+start_sync(){
+	mountpath=$(ls -l /dev/disk/by-uuid/ | grep -E $flash_uuid |  tr -s ' '|cut -f11 -d ' '|cut -f3 -d '/')
+
+	echo "SYNC on $flash_uuid on $mountpath" | tee "$HOMEPATH/.config/exgit/exgit.log"
+
+
+	# Call service to start (Upstart)
+	# /usr/bin/sudo -u <user> initctl start exgit_sycn P=$mountpath 
+	`initctl start exgit_sync P=$mountpath`
+}
+
+
+case $ACTION in
+	# Init repo Localy and on Flash
+	"init" )
+			init_new_repo "$REPONAME"
+		;;
+	# Local to Flash
+	"ltof" )
+			local_to_flash "$REPONAME" 
+		;;
+	# Flash to Local
+	# "ftol" )
+	# 		FlashToLocal "$REPONAME"
+	# 	;;
+	# Start sync
+	"sync" )
+			flash_uuid=$2
+			start_sync $flash_uuid
+		;;
+	# push to flash automated
+	"autopush" ) 
+			mountpath=$2
+			auto_push $mountpath
+		;;
+
+esac
+
