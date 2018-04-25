@@ -48,7 +48,7 @@ $ exgit init
 
 ```
 
-####2. Local repository to a USB stick
+#### 2. Local repository to a USB stick
 
 ```
 #ltof -- localToFlash
@@ -59,7 +59,7 @@ $ exgit ltof
 
 ```
 
-####3. Auto-push called automaticaly on  flash/usb drive insert
+#### 3. Auto-push called automaticaly on  flash/usb drive insert
 
 ```
 #upstart calls autopush <drive partition>
@@ -68,7 +68,7 @@ $ exgit autopush <drive partition i.e sdb1>
 
 ```
 
-##Tests
+## Tests
 Test environment: ```uname -a ``` output:
 ```
 
@@ -83,7 +83,7 @@ Exgit :
 * adds udev rules under ```/etc/udev/rules.d/10-exgit.rules```
 * mountall version
 
-##TO-DO
+## TO-DO
 >
 * systemd implementation of upstart 
 * Proper logging of autopush background outputs
