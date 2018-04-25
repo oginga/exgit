@@ -34,7 +34,7 @@ The install script would add ``` $HOME/bin``` (where exgit executable lies) to `
 
 
 ## Usage
-####1. Create a new repo(from scratch)
+#### 1. Create a new repo(from scratch)
 Root permissions will be requested on-the-fly.**DO NOT RUN AS ROOT**
 
 ```
