@@ -256,8 +256,8 @@ function local_to_flash(){
 	cd /media/$repodir/EXGIT
 
 	# Clone as bare existing repo
-	echo "Cloning repo from drive to $current_path"
-	echo "Cloning repo from drive to $current_path" >> $LOG_FILE 
+	echo "Cloning repo $current_path to drive"
+	echo "Cloning repo $current_path to drive" >> $LOG_FILE 
 	`git clone --bare $current_path $repo_name`
 
 	# Change ownership to user 
