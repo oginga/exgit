@@ -55,7 +55,7 @@ function add_udev_rule(){
 	if [[ ! -f /etc/udev/rules.d/10-exgit.rules ]]; then
 		echo "Adding exgit udev rule......"
 		echo "Adding exgit udev rule......" >> $LOG_FILE 
-		echo "$RULE" | tee -a "/etc/udev/rules.d/10-exgit.rules" >> /dev/null 2>&1
+		echo "$RULE" |sudo tee -a "/etc/udev/rules.d/10-exgit.rules" >> /dev/null 2>&1
 		
 	else
 		if sudo grep -Fq "$RULE" /etc/udev/rules.d/10-exgit.rules
@@ -64,7 +64,7 @@ function add_udev_rule(){
 		else
 			echo "Adding exgit udev rule......"
 			echo "Adding exgit udev rule......" >> $LOG_FILE 
-			echo "$RULE" | tee -a "/etc/udev/rules.d/10-exgit.rules" >> /dev/null 2>&1
+			echo "$RULE" |sudo tee -a "/etc/udev/rules.d/10-exgit.rules" >> /dev/null 2>&1
 			
 		fi	
 
@@ -118,7 +118,7 @@ function add_fstab_entry(){
 	else
 		echo "Adding fstab entry......"
 		echo "Adding fstab entry......" >> $LOG_FILE 
-		echo "$ENTRY" | tee -a "/etc/fstab" >> /dev/null 2>&1
+		echo "$ENTRY" | sudo tee -a "/etc/fstab" >> /dev/null 2>&1
 		
 	fi
 
@@ -257,7 +257,7 @@ function local_to_flash(){
 
 	# Clone as bare existing repo
 	echo "Cloning repo $current_path to drive"
-	echo "Cloning repo $current_path to drive" >> $LOG_FILE 
+	echo "Cloning repo $current_path to driv"e >> $LOG_FILE 
 	`git clone --bare $current_path $repo_name`
 
 	# Change ownership to user 
