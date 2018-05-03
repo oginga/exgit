@@ -8,7 +8,7 @@ Exgit(external git) is a Bash driven git wrapper for linux to make automatic git
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See __installing__ for notes on how to install it on your system.
 
 ### Prerequisites
 
