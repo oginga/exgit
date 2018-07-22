@@ -252,6 +252,12 @@ function local_to_flash(){
 	# Breakdown the $PWD to get repo name
 	repo_name=$(basename $current_path)
 
+	# Check if repo dir exists
+	if [[ ! -d /media/$repodir/EXGIT/ ]]; then
+		`sudo mkdir /media/$repodir/EXGIT`
+		`sudo chown $MYUID:$MYGID /media/$repodir/EXGIT`
+	fi
+
 	# Change dir to flashdrive
 	cd /media/$repodir/EXGIT
 
