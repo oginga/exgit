@@ -23,7 +23,7 @@ Clone this repo and execute the ```install.sh``` file as illustrated below. **DO
 
 ```
 #From the current dir(this repo's root)
-$ chmod +ax install.sh 
+$ chmod a+x install.sh 
 
 $ ./install.sh
 
