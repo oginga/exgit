@@ -2,9 +2,9 @@
 
 # Exgit
 
-Exgit(external git) is a Bash driven git wrapper for linux to make automatic git push of your local git repositories whenever an initialized external flashdrive is inserted. **Repository_on_a_USB_stick**
+Exgit(external git) is a Bash driven git wrapper for linux to make **automatic git push** of your commits on initialized local git repositories whenever an exgit-initialized external flashdrive is inserted. **Repository_on_a_USB_stick**
 
-**Instead of having to resort to a hosting company to store your central repository, or to rely on a central server or internet connection to contribute changes to a project, it's quite possible to use removable memory to exchange and update  local repositories.** [Repository_on_a_USB_stick](https://en.wikibooks.org/wiki/Git/Repository_on_a_USB_stick)
+**Instead of having to resort to a hosting company to store your central repository, or to rely on a central server or internet connection to contribute changes to a project, it's quite possible to use REMOVABLE STORAGE to exchange and update  local repositories.** [Repository_on_a_USB_stick](https://en.wikibooks.org/wiki/Git/Repository_on_a_USB_stick)
 
 ## Getting Started
 
@@ -21,8 +21,7 @@ What things you need to install the software and how to install them
 
 Clone this repo and execute the ```install.sh``` file as illustrated below. **DO NOT RUN AS ROOT** ,the script will ask you for root permissions on-the-fly!
 
-```exgit_sync.conf``` contains a template for creating upstart service.
-
+```exgit_sync.conf and exgit@.service``` contains template for creating upstart and systemd service respectively.
 ```
 #From the current dir(this repo's root)
 $ chmod a+x install.sh 
@@ -32,7 +31,7 @@ $ ./install.sh
 #You will be prompted for root password
 ```
 
-The install script would add ``` $HOME/bin``` (where exgit executable lies) to ```$PATH```
+The install script would add ``` $HOME/bin``` (where exgit executable and files lie) to ```$PATH```
 
 
 ## Usage
@@ -54,6 +53,7 @@ $ exgit init
 
 ```
 #ltof -- localToFlash
+#Change Dir into the repo --> cd  /Projects/<repo-dir>
 
 $ exgit ltof
 
@@ -64,7 +64,7 @@ $ exgit ltof
 #### 3. Auto-push called automaticaly on  flash/usb drive insert
 
 ```
-#upstart calls autopush <drive partition>
+#udev calls exgit's sync fnc which calls systemd/upstart which calls exgit's autopush fnc with <drive partition>
 
 $ exgit autopush <drive partition i.e sdb1>
 
@@ -73,9 +73,7 @@ $ exgit autopush <drive partition i.e sdb1>
 ## Tests
 Test environment: ```uname -a ``` output:
 ```
-
-Linux .... 4.4.0-119-generic #143~14.04.1-Ubuntu ... UTC 2018 x86_64 x86_64 x86_64 GNU/Linux
-
+Linux .....4.15.0-66-generic #75-Ubuntu SMP ...UTC 2019 x86_64 x86_64 x86_64 GNU/Linux
 ```
 <hr>
 
@@ -86,13 +84,6 @@ Exgit :
 * modifies ```/etc/fstab```
 * adds udev rules under ```/etc/udev/rules.d/10-exgit.rules```
 * mountall version
-
-## TO-DO
->
-* systemd implementation of upstart 
-* Proper logging of autopush background outputs
-* Notifications to indicate successfull operations to the user
-* Mount/Unmount external drive as non -root
 
 
 
