@@ -2,11 +2,13 @@
 
 # Exgit
 
-Bash driven git wrapper for linux to make automatic git push of your local git repositories whenever an initialized external flashdrive is inserted.
+Exgit(external git) is a Bash driven git wrapper for linux to make automatic git push of your local git repositories whenever an initialized external flashdrive is inserted. **Repository_on_a_USB_stick**
+
+**Instead of having to resort to a hosting company to store your central repository, or to rely on a central server or internet connection to contribute changes to a project, it's quite possible to use removable memory to exchange and update  local repositories.** [Repository_on_a_USB_stick](https://en.wikibooks.org/wiki/Git/Repository_on_a_USB_stick)
 
 ## Getting Started
 
-These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See deployment for notes on how to deploy the project on a live system.
+These instructions will get you a copy of the project up and running on your local machine for development and testing purposes. See __installing__ for notes on how to install it on your system.
 
 ### Prerequisites
 
@@ -96,7 +98,7 @@ Exgit :
 
 ## Resources
 
-* [wiki](https://en.wikibooks.org/wiki/Git/Repository_on_a_USB_stick)
+* [Repository_on_a_USB_stick](https://en.wikibooks.org/wiki/Git/Repository_on_a_USB_stick)
 * StackOverflow 
 * Linux forums
 
