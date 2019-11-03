@@ -53,8 +53,7 @@ function add_udev_rule(){
 
 	#Check for existence of entry else create a new file to hold our rules
 	if [[ ! -f /etc/udev/rules.d/10-exgit.rules ]]; then
-		echo "Adding exgit udev rule......"
-		echo "Adding exgit udev rule......" >> $LOG_FILE 
+		echo "Adding exgit udev rule......" | tee -a "$HOME/.config/exgit/exgit.log"
 		echo "$RULE" |sudo tee -a "/etc/udev/rules.d/10-exgit.rules" >> /dev/null 2>&1
 		
 	else
@@ -62,8 +61,7 @@ function add_udev_rule(){
 			then
 			echo
 		else
-			echo "Adding exgit udev rule......"
-			echo "Adding exgit udev rule......" >> $LOG_FILE 
+			echo "Adding exgit udev rule......" | tee -a "$HOME/.config/exgit/exgit.log"
 			echo "$RULE" |sudo tee -a "/etc/udev/rules.d/10-exgit.rules" >> /dev/null 2>&1
 			
 		fi	
@@ -81,43 +79,41 @@ function add_fstab_entry(){
 	check_mountall_version
 
 
-	if (( $(echo "$version < 2.5" | bc -l) )) ; then
-		echo "Mountall version < 2.5"
-		echo "Mountall version < 2.5"  >> $LOG_FILE 
+	# if (( $(echo "$version < 2.5" | bc -l) )) ; then
+	# 	echo "Mountall version < 2.5"  | tee -a "$HOME/.config/exgit/exgit.log"
+	# 	# Prepare mount directory
+	# 	if [[ ! -d /media/$uuid/ ]]; then
+	# 		`sudo mkdir /media/$uuid`
+	# 		`sudo chown $MYUID:$MYGID /media/$uuid`
+	# 		`sudo chmod -R 777 /media/$uuid`
+	# 	fi
+
+	# 	repodir=$uuid
+
+	# 	# ENTRY="UUID=$uuid    /media/$uuid/    $file_sys_type uid=$uid,gid=$gid,nofail,x-systemd.device-timeout=1,noauto,exec,umask=000 0 0"
+	# 	ENTRY="UUID=$uuid    /media/$uuid/    $file_sys_type uid=$uid,gid=$gid,users,nofail,noauto,exec,umask=000 0 0"
+	# else
 		# Prepare mount directory
-		if [[ ! -d /media/$uuid/ ]]; then
-			`sudo mkdir /media/$uuid`
-			`sudo chown $MYUID:$MYGID /media/$uuid`
-			`sudo chmod -R 777 /media/$uuid`
-		fi
-
-		repodir=$uuid
-
-		# ENTRY="UUID=$uuid    /media/$uuid/    $file_sys_type uid=$uid,gid=$gid,nofail,x-systemd.device-timeout=1,noauto,exec,umask=000 0 0"
-		ENTRY="UUID=$uuid    /media/$uuid/    $file_sys_type uid=$uid,gid=$gid,users,nofail,noauto,exec,umask=000 0 0"
-	else
-		# Prepare mount directory
-		echo "Mountall version >= 2.5"
-		echo "Mountall version >=2.5"  >> $LOG_FILE 
-		if [[ ! -d /media/exgit/ ]]; then
-			`sudo mkdir /media/exgit`
-			`sudo chown $MYUID:$MYGID /media/exgit`
-			`sudo chmod -R 777 /media/exgit`
-		fi
-		repodir="exgit"
-
-		ENTRY="UUID=$uuid    /media/exgit/    $file_sys_type uid=$uid,gid=$gid,users,nofail,noauto,exec,umask=000 0 0"
-
+	echo "Mountall version >=2.5"  | tee -a "$HOME/.config/exgit/exgit.log"
+	if [[ ! -d /media/exgit/ ]]; then
+		`sudo mkdir /media/exgit`
+		`sudo chown $MYUID:$MYGID /media/exgit`
+		`sudo chmod -R 777 /media/exgit`
 	fi
+	repodir="exgit"
+
+	ENTRY="UUID=$uuid    /media/exgit/    $file_sys_type uid=$uid,gid=$gid,users,nofail,noauto,exec,umask=000 0 0"
+
+	# fi
+
+	# mount -t vfat -o locale=en_IE.UTF-8,uid=1000,gid=1000,users,nofail,noauto,exec,umask=0000 /dev/sdb1 /media/exgit
 
 	# Check for existence of entry else create a new entry
 	if sudo grep -Fq "$ENTRY" /etc/fstab
 		then
-		echo "Fstab entry exists.Ignoring"
-		echo "Fstab entry exists.Ignoring" >> $LOG_FILE 
+		echo "Fstab entry exists.Ignoring" | tee -a "$HOME/.config/exgit/exgit.log"
 	else
-		echo "Adding fstab entry......"
-		echo "Adding fstab entry......" >> $LOG_FILE 
+		echo "Adding fstab entry......" | tee -a "$HOME/.config/exgit/exgit.log"
 		echo "$ENTRY" | sudo tee -a "/etc/fstab" >> /dev/null 2>&1
 		
 	fi
@@ -133,17 +129,17 @@ function check_mountall_version(){
 
 function mount_flashdrive(){
 	# Ignore error raised
-	echo "Mounting drive"
-	echo "Mounting drive" >> $LOG_FILE 
+	echo "Mounting drive" | tee -a "$HOME/.config/exgit/exgit.log"
 	# logger `udisksctl mount -b /dev/$selected` #>> /dev/null 2>&1`
-	`udisksctl mount -b /dev/$selected`
-	echo "Drive mounted"
-	echo "Drive mounted" >> $LOG_FILE 
+	# ----------------------------------------
+	# `udisksctl mount -b /dev/$selected`
+	# ------------------------------------
+	`mount /dev/$selected`
+	echo "Drive mounted" | tee -a "$HOME/.config/exgit/exgit.log"
 }
 
 function init_bare_repo(){
-	echo "Initializing repo at $repodir"
-	echo "Initializing repo at $repodir" >> $LOG_FILE 
+	echo "Initializing repo at $repodir" | tee -a "$HOME/.config/exgit/exgit.log"
 	`cd /media/$repodir`
 	if [[ ! -d /media/$repodir/EXGIT/ ]]; then
 		`sudo mkdir /media/$repodir/EXGIT`
@@ -164,8 +160,7 @@ function get_repo_name(){
 	then
 		get_repo_name 
 	else
-		echo "Reponame==$repo_name"
-		echo "Reponame==$repo_name" >> $LOG_FILE 
+		echo "Reponame==$repo_name" | tee -a "$HOME/.config/exgit/exgit.log"
 	    rn=$repo_name
 	fi
 }
@@ -183,8 +178,8 @@ function set_remote(){
 }
 
 function init_configs(){
-	current_path=$PWD
-	MYUID=`id -u`
+	current_path=$PWD #Store the current DIR PATH
+	MYUID=`id -u` #User ID and Group ID for permissions
 	MYGID=`id -g`
 }
 
@@ -227,21 +222,17 @@ function init_new_repo(){
 		# Init repo
 		get_repo_name
 		init_bare_repo $rn
-		echo "Repo initialized...."
-		echo "Repo initialized...." >> $LOG_FILE 
+		echo "Repo initialized...." | tee -a "$HOME/.config/exgit/exgit.log"
 		clone_repo $rn
-		echo "Cloning repo from drive to $current_path"
-		echo "Cloning repo from drive to $current_path" >> $LOG_FILE 
+		echo "Cloning repo from drive to $current_path" | tee -a "$HOME/.config/exgit/exgit.log"
 		set_remote $rn
-		echo "Setting repo remote"
-		echo "Setting repo remote" >> $LOG_FILE 
+		echo "Setting repo remote" | tee -a "$HOME/.config/exgit/exgit.log"
 		remote="origin"
 		slash="/"
 		pathtorepo=$current_path$slash$rn
 
 		store_repo_details $rn $remote $pathtorepo
-		echo "Stored repo details."
-		echo "Stored repo details." >> $LOG_FILE 
+		echo "Stored repo details." | tee -a "$HOME/.config/exgit/exgit.log"
 
 }
 
@@ -262,8 +253,7 @@ function local_to_flash(){
 	cd /media/$repodir/EXGIT
 
 	# Clone as bare existing repo
-	echo "Cloning repo $current_path to drive"
-	echo "Cloning repo $current_path to driv"e >> $LOG_FILE 
+	echo "Cloning repo $current_path to driv"e | tee -a "$HOME/.config/exgit/exgit.log"
 	`git clone --bare $current_path $repo_name`
 
 	# Change ownership to user 
@@ -272,8 +262,7 @@ function local_to_flash(){
 	cd $current_path
 
 	# Set remote
-	echo "Setting repo remote"
-	echo "Setting repo remote" >> $LOG_FILE 
+	echo "Setting repo remote" | tee -a "$HOME/.config/exgit/exgit.log"
 	`git remote add usb /media/$repodir/EXGIT/$repo_name/`
 
 	remote="usb"
@@ -281,8 +270,7 @@ function local_to_flash(){
 	pathtorepo=$current_path$slash$rn
 
 	store_repo_details $rn $remote $pathtorepo
-	echo "Stored repo details."
-	echo "Stored repo details." >> $LOG_FILE 
+	echo "Stored repo details." | tee -a "$HOME/.config/exgit/exgit.log"
 
 	`notify-send  -u NORMAL EXGIT "$repo_name initiated successfully"`
 
@@ -292,7 +280,7 @@ function local_to_flash(){
 function store_repo_details(){
 	# check if dir and file exists
 	echo "Storing repo data"
-	echo "Storing repo data" >> $LOG_FILE 
+	echo "Storing repo data" | tee -a "$HOME/.config/exgit/exgit.log"
 	delimmiter=","
 	# str concat
 	ROW=$repo_name$delimmiter$remote$delimmiter$pathtorepo$delimmiter$repodir
@@ -305,17 +293,16 @@ function store_repo_details(){
 
 	if [[ ! -f $HOME/.config/exgit/exgit.txt ]]; then
 			#create file
-			echo "No .txt file found"
+			echo "No .txt file found" | tee -a "$HOME/.config/exgit/exgit.log"
 			`sudo touch $HOME/.config/exgit/exgit.txt`
 			# echo "$ROW" | tee -a "/opt/exgit/exgit.txt" >> /dev/null 2>&1
 	fi
 
 	if grep -Fq "$repo_name" $HOME/.config/exgit/exgit.txt
 		then
-			echo "Repo details entry exists"
-			echo "Repo details entry exists" >> $LOG_FILE 	
+			echo "Repo details entry exists" | tee -a "$HOME/.config/exgit/exgit.log"
 	else
-		echo "$ROW" | tee -a "$HOME/.config/exgit/exgit.txt" >> $LOG_FILE
+		echo "$ROW" | tee -a "$HOME/.config/exgit/exgit.txt"
 		
 	fi
 	
@@ -324,8 +311,11 @@ function store_repo_details(){
 # Get homeDIR for background tasks
 
 function sync_repos(){
-	echo "<--Syncronizing exgit repos----$HOMEPATH -->" | tee "$HOMEPATH/.config/exgit/exgit.log"
-	for DIR in $(find /media/$mountuuid/EXGIT -maxdepth 1);
+	echo "<--Syncronizing exgit repos----$HOMEPATH -->" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
+	# ------------------------------------------------------------
+	# for DIR in $(find /media/$mountuuid/EXGIT -maxdepth 1);
+	#-------------------------------------------------------------
+	for DIR in $(find /media/exgit/EXGIT -maxdepth 1);
 		do 
 			if $(test -d ${DIR}); then 
 				repo_name=$(basename ${DIR})
@@ -334,8 +324,7 @@ function sync_repos(){
 				if grep -Fq "$repo_name" $HOMEPATH/.config/exgit/exgit.txt
 					then
 						# echo "Entry exists"
-						echo "Exgit: $repo_name found."
-						echo "Exgit: $repo_name found." | tee "$HOMEPATH/.config/exgit/exgit.log"
+						echo "Exgit: $repo_name found." | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 						entry=$( echo `grep "$repo_name" "$HOMEPATH/.config/exgit/exgit.txt"`)
 						
 						remote=`echo "$entry" | cut -f2 -d ',' `
@@ -343,8 +332,7 @@ function sync_repos(){
 
 						# 
 						if $(test -d ${path}); then
-							echo "Pushing....$path. "
-							echo "Pushing....$path. " | tee "$HOMEPATH/.config/exgit/exgit.log"
+							echo "Pushing....$path. " | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 							cd $path
 							git push $remote master
 
@@ -362,13 +350,16 @@ function sync_repos(){
 }
 
 function peform_checks(){
-	if [[ ! -d /media/$mountuuid/EXGIT ]]; then
-			echo "EXGIT folder missing on drive OR drive not mounted/inserted"
+	# -----------------------------------------------
+	# if [[ ! -d /media/$mountuuid/EXGIT ]]; then
+	# ---------------------------------------------------
+	if [[ ! -d /media/exgit/EXGIT/ ]]; then
+			echo "EXGIT folder missing on drive OR drive not mounted/inserted" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 			`notify-send  -u NORMAL EXGIT "EXGIT folder missing on drive OR drive not mounted/inserted"`
 			exit 0
 	else
 		notify-send  -u NORMAL EXGIT "All checks passed"
-		echo "Houskeeping passed"
+		echo "Houskeeping passed" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 
 	fi
 
@@ -376,14 +367,14 @@ function peform_checks(){
 	# # if [[ ! -f "$path" ]]; then
 	# 		#notify unable
 	# 		echo "Error: $path/.config/exgit/exgit.txt unavailable"
-	# 		# echo "Error: $path unavailable" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	# 		# echo "Error: $path unavailable" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 	# 		`notify-send  -u NORMAL EXGIT "Error: $HOME/.config/exgit/exgit.txt unavailable"`
 	# 		exit 0
 	# else
 	# 	if [[ ! -d /media/$mountuuid/EXGIT ]]; then
-	# 			echo "UUID=$mountuuid" >> $LOG_FILE 
+	# 			echo "UUID=$mountuuid" | tee -a "$HOME/.config/exgit/exgit.log"
 	# 			echo "EXGIT folder missing on drive OR drive not mounted/inserted"
-	# 			echo "EXGIT folder missing on drive OR drive not mounted/inserted" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	# 			echo "EXGIT folder missing on drive OR drive not mounted/inserted" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 	# 			`notify-send  -u NORMAL EXGIT "EXGIT folder missing on drive OR drive not mounted/inserted"`
 	# 			exit 0
 	# 	else
@@ -398,40 +389,61 @@ function peform_checks(){
 
 
 mount_her(){
-	echo "Mounting $mountpath " | tee "$HOMEPATH/.config/exgit/exgit.log"
-	`udisksctl mount -b /dev/$mountpath -o users`
-	echo "$mountpath mounted" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	echo "Mounting $mountpath " | tee -a "$HOMEPATH/.config/exgit/exgit.log"
+	# `udisksctl mount -b /dev/$mountpath -o users`
+	# ----------------------------------------
+	# `udisksctl mount -b /dev/$mountpath`
+	# -------------------------------------------
+	`mount /dev/$mountpath`
+	echo "$mountpath mounted" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 }
 
 get_mount_uuid(){
-	echo "Mount path==$mountpath" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	echo "Mount path==$mountpath" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 	mountuuid=$(ls -l /dev/disk/by-uuid/ | grep -E $mountpath |  tr -s ' '|cut -f9 -d ' ')
-	echo "Mount uuid==$mountuuid" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	echo "Mount uuid==$mountuuid" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 }
 
 auto_push(){
 
 	
-	# Start a child daemon process and exit this one since udev is not for long running tasks
-	echo "<----------Started PUSH operation------ $mountpath--->"| tee "$HOMEPATH/.config/exgit/exgit.log"
 	
-	mount_her $mountpath
-	get_mount_uuid
-	peform_checks $mountuuid
-	sync_repos
-	echo "<----------Ending PUSH operation------------>" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	# Check if mountpath is null/empty
+	if [ -z "$mountpath"]; 
+	then
+		echo "Mount path is empty.Exiting...." | tee -a "$HOMEPATH/.config/exgit/exgit.log"
+		#statements
+	else
+		# Start a child daemon process and exit this one since udev is not for long running tasks
+		echo "<----------Started PUSH operation------ $mountpath--->"| tee -a "$HOMEPATH/.config/exgit/exgit.log"
+
+		mount_her $mountpath
+		get_mount_uuid
+		peform_checks $mountuuid
+		sync_repos
+		echo "<----------Ending PUSH operation------------>" | tee -a "$HOMEPATH/.config/exgit/exgit.log"	
+	fi
+	
 }
 
 
 start_sync(){
 	mountpath=$(ls -l /dev/disk/by-uuid/ | grep -E $flash_uuid |  tr -s ' '|cut -f11 -d ' '|cut -f3 -d '/')
 
-	echo "SYNC on $flash_uuid on $mountpath" | tee "$HOMEPATH/.config/exgit/exgit.log"
+	echo "SYNC on $flash_uuid on $mountpath" | tee -a "$HOMEPATH/.config/exgit/exgit.log"
 
 
 	# Call service to start (Upstart)
 	# /usr/bin/sudo -u <user> initctl start exgit_sycn P=$mountpath 
 	`initctl start exgit_sync P=$mountpath`
+
+	# For systemd
+	exg='exgit@"'
+	term='".service'
+	serviceName=$exg$mountpath$term
+	echo $serviceName
+	systemctl start exgit@\"$mountpath\".service
+	# systemctl start $serviceName 
 }
 
 
@@ -460,4 +472,3 @@ case $ACTION in
 		;;
 
 esac
-

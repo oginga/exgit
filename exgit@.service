@@ -1,0 +1,6 @@
+[Unit]
+Description=A job that enables exgit sync its repositories
+
+
+[Service]
+Environment="MOUNTPATH=%I"
